@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+*.db
+.env
+.env.*
+backend/.venv/
+
+# FastAPI uploads
+backend/app/static/uploads/
+
+# Node / Vite / Vue
+node_modules/
+dist/
+vite.svg
+.vscode/
+.DS_Store
+*.log
+frontend/.env
+frontend/.env.*
+
+# OS
+Thumbs.db
