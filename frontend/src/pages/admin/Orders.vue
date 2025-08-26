@@ -82,28 +82,29 @@
 
       <el-table :data="form.items" size="small">
         <el-table-column label="#" type="index" width="60"/>
-        <el-table-column label="商品">
+        <el-table-column label="商品" width="200">
           <template #default="s">
             <div style="display:flex;align-items:center;gap:8px">
-              <img v-if="productImg(s.row.product_id)" :src="productImg(s.row.product_id)" style="width:48px;height:36px;object-fit:cover;border-radius:6px" />
+              <img v-if="productImg(s.row.product_id)" :src="productImg(s.row.product_id)" style="width:40px;height:40px;object-fit:cover;border-radius:6px" />
               <span>{{ productName(s.row.product_id) }}</span>
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="布料">
+        <el-table-column label="布料" width="170">
           <template #default="s">
             <div style="display:flex;align-items:center;gap:8px">
-              <img v-if="fabricImg(s.row.fabric_id)" :src="fabricImg(s.row.fabric_id)" style="width:48px;height:36px;object-fit:cover;border-radius:6px" />
+              <img v-if="fabricImg(s.row.fabric_id)" :src="fabricImg(s.row.fabric_id)" style="width:40px;height:40px;object-fit:cover;border-radius:6px" />
               <span>{{ fabricName(s.row.fabric_id) }}</span>
             </div>
           </template>
         </el-table-column>
         <el-table-column label="狀態" prop="state" width="120"/>
-        <el-table-column label="原價" width="120">
+        <el-table-column label="描述" prop="description" min-width="220" show-overflow-tooltip />
+        <el-table-column label="原價" width="100">
           <template #default="s">{{ priceOf(s.row.product_id).toFixed(0) }}</template>
         </el-table-column>
-        <el-table-column label="調整" prop="adjustment" width="120"/>
-        <el-table-column label="小計" width="120">
+        <el-table-column label="調整" prop="adjustment" width="100"/>
+        <el-table-column label="小計" width="100">
           <template #default="s">{{ (priceOf(s.row.product_id) + (s.row.adjustment||0)).toFixed(0) }}</template>
         </el-table-column>
       </el-table>
