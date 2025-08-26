@@ -51,15 +51,24 @@
 
       <el-divider>商品圖片</el-divider>
 
-      <template v-if="!form.id">
-        <div class="card">
-          <p class="small">商品圖片（可多選）</p>
-          <input type="file" multiple accept="image/*" @change="onPickPending($event)"/>
-          <div class="grid cols-3" style="margin-top:8px">
-            <img v-for="(u,i) in pendingPreviews" :key="i" :src="u" class="img"/>
-          </div>
-        </div>
-      </template>
+      
+<template v-if="!form.id">
+  <div class="card">
+    <p class="small">商品圖片（可多選）</p>
+    <el-upload
+      list-type="picture-card"
+      :auto-upload="false"
+      :file-list="pendingList"
+      :on-change="onPendingChange"
+      :on-remove="onPendingChange"
+      multiple
+      accept="image/*"
+    >
+      <template #default>選擇圖片</template>
+    </el-upload>
+  </div>
+</template>
+
 
       <template v-else>
         <UploadGallery v-model="form.images_urls" :upload-url="`/api/upload/products/${form.id}`" title="商品圖片"/>
@@ -88,6 +97,21 @@ const form = reactive({})
 const newCat = ref('')
 
 const pendingFiles = ref([])
+
+const pendingList = ref([]) // UploadUserFile[] for create mode
+
+function ensureUid(list) {
+  list.forEach((f, i) => {
+    if (!f.uid) f.uid = `${Date.now()}_${i}_${Math.random().toString(36).slice(2,7)}`
+  })
+}
+
+function onPendingChange(_file, files) {
+  ensureUid(files)
+  pendingList.value = files
+  pendingFiles.value = files.map(f => f.raw).filter(Boolean)
+}
+
 const pendingPreviews = ref([])
 
 const apiBase = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8000'
@@ -162,3 +186,7 @@ async function delRow(row) {
 
 onMounted(fetchAll)
 </script>
+
+<style scoped>
+.el-upload-list__item-actions{opacity:1 !important;}
+</style>
