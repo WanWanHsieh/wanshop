@@ -21,7 +21,7 @@
     </el-table-column>
   </el-table>
 
-  <el-dialog v-model="show" width="80%" :title="form.id ? '編輯訂單' : '新增訂單'" destroy-on-close append-to-body top="10vh">
+  <el-drawer v-model="show" size="80%" :title="form.id ? '編輯訂單' : '新增訂單'">
     <el-form :model="form" label-width="120">
       <el-form-item label="顧客名稱"><el-input v-model="form.customer_name"/></el-form-item>
       <el-form-item label="訂單描述"><el-input v-model="form.description"/></el-form-item>
@@ -62,16 +62,41 @@
           <el-input-number v-model="newItem.adjustment" :step="10" :min="-9999" :max="9999" placeholder="調整金額"/>
           <el-input v-model="newItem.description" placeholder="描述" style="min-width:240px"/>
           <el-button @click="addItem">加入</el-button>
+
+      <!-- 選擇結果預覽：商品 / 布料 -->
+      <div style="display:flex; gap:16px; align-items:center; margin:8px 0 4px 0">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <img v-if="productImg(newItem.product_id)" :src="productImg(newItem.product_id)" style="width:72px;height:54px;object-fit:cover;border-radius:8px;border:1px solid #eee" />
+          <span v-if="newItem.product_id" class="small">{{ productName(newItem.product_id) }}</span>
+          <span v-else class="small" style="color:#999">未選擇商品</span>
+        </div>
+        <span class="small" style="color:#bbb">/</span>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <img v-if="fabricImg(newItem.fabric_id)" :src="fabricImg(newItem.fabric_id)" style="width:72px;height:54px;object-fit:cover;border-radius:8px;border:1px solid #eee" />
+          <span v-if="newItem.fabric_id" class="small">{{ fabricName(newItem.fabric_id) }}</span>
+          <span v-else class="small" style="color:#999">未選擇布料</span>
+        </div>
+      </div>
         </el-space>
       </div>
 
       <el-table :data="form.items" size="small">
         <el-table-column label="#" type="index" width="60"/>
         <el-table-column label="商品">
-          <template #default="s">{{ productName(s.row.product_id) }}</template>
+          <template #default="s">
+            <div style="display:flex;align-items:center;gap:8px">
+              <img v-if="productImg(s.row.product_id)" :src="productImg(s.row.product_id)" style="width:48px;height:36px;object-fit:cover;border-radius:6px" />
+              <span>{{ productName(s.row.product_id) }}</span>
+            </div>
+          </template>
         </el-table-column>
         <el-table-column label="布料">
-          <template #default="s">{{ fabricName(s.row.fabric_id) }}</template>
+          <template #default="s">
+            <div style="display:flex;align-items:center;gap:8px">
+              <img v-if="fabricImg(s.row.fabric_id)" :src="fabricImg(s.row.fabric_id)" style="width:48px;height:36px;object-fit:cover;border-radius:6px" />
+              <span>{{ fabricName(s.row.fabric_id) }}</span>
+            </div>
+          </template>
         </el-table-column>
         <el-table-column label="狀態" prop="state" width="120"/>
         <el-table-column label="原價" width="120">
@@ -92,7 +117,7 @@
         <el-button type="primary" @click="save">儲存</el-button>
       </div>
     </template>
-  </el-dialog>
+  </el-drawer>
 </template>
 
 <script setup>
@@ -109,6 +134,18 @@ const newItem = reactive({ product_id: null, fabric_id: null, state: '空白', a
 
 const productName = id => products.value.find(p=>p.id===id)?.name || '-'
 const fabricName = id => fabrics.value.find(f=>f.id===id)?.name || '-'
+
+const apiBase = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8000'
+const productImg = (id) => {
+  const p = products.value.find(p=>p.id===id)
+  if (p?.images?.length) return apiBase + p.images[0].url
+  return ''
+}
+const fabricImg = (id) => {
+  const f = fabrics.value.find(f=>f.id===id)
+  if (f?.images?.length) return apiBase + f.images[0].url
+  return ''
+}
 const priceOf = id => {
   const p = products.value.find(p=>p.id===id)
   if (!p) return 0
