@@ -7,9 +7,8 @@ export const api = axios.create({
   timeout: 15000,
 })
 
-// Auto-prefix /api and handle FormData
+// Auto-prefix /api and handle FormData upload
 export function fileUpload(url, files) {
-  // ensure url has /api prefix
   const fixed = url.startsWith('/api/') ? url : '/api' + (url.startsWith('/') ? url : '/' + url)
   const fd = new FormData()
   for (const f of files) fd.append('files', f)

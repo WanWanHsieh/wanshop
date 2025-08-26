@@ -3,12 +3,22 @@
   <h2>商品紀錄</h2>
   <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
     <el-button type="primary" @click="openForm()">新增商品</el-button>
-    <el-divider direction="vertical"/>
     <el-input v-model="newCat" placeholder="新增類別名稱" style="max-width:200px"/>
     <el-button @click="addCat">新增類別</el-button>
   </div>
+
   <el-table :data="products" style="width:100%; margin-top:10px">
     <el-table-column label="#" width="60" type="index"/>
+    <el-table-column label="圖片" width="120">
+      <template #default="s">
+        <img
+          v-if="firstImg(s.row)"
+          :src="firstImg(s.row)"
+          style="width:80px;height:60px;object-fit:cover;border-radius:6px"
+        />
+        <span v-else class="small">無</span>
+      </template>
+    </el-table-column>
     <el-table-column label="名稱" prop="name"/>
     <el-table-column label="類別" width="140">
       <template #default="s">{{ catName(s.row.category_id) }}</template>
@@ -38,10 +48,24 @@
       <el-form-item label="促銷價"><el-input-number v-model="form.promo_price" :min="0" :step="10"/></el-form-item>
       <el-form-item label="尺寸"><el-input v-model="form.size"/></el-form-item>
       <el-form-item label="描述"><el-input type="textarea" v-model="form.description"/></el-form-item>
+
       <el-divider>商品圖片</el-divider>
-      <!-- fixed: ensure /api prefix -->
-      <UploadGallery v-if="form.id" v-model="form.images_urls" :upload-url="`/api/upload/products/${form.id}`" title="商品圖片"/>
+
+      <template v-if="!form.id">
+        <div class="card">
+          <p class="small">商品圖片（可多選）</p>
+          <input type="file" multiple accept="image/*" @change="onPickPending($event)"/>
+          <div class="grid cols-3" style="margin-top:8px">
+            <img v-for="(u,i) in pendingPreviews" :key="i" :src="u" class="img"/>
+          </div>
+        </div>
+      </template>
+
+      <template v-else>
+        <UploadGallery v-model="form.images_urls" :upload-url="`/api/upload/products/${form.id}`" title="商品圖片"/>
+      </template>
     </el-form>
+
     <template #footer>
       <div style="flex:1; text-align:right">
         <el-button @click="show=false">取消</el-button>
@@ -53,7 +77,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { api } from '../../api'
+import { api, fileUpload } from '../../api'
 import BackButton from '../../components/BackButton.vue'
 import UploadGallery from '../../components/UploadGallery.vue'
 
@@ -63,11 +87,24 @@ const show = ref(false)
 const form = reactive({})
 const newCat = ref('')
 
+const pendingFiles = ref([])
+const pendingPreviews = ref([])
+
+const apiBase = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8000'
+const firstImg = (p) => {
+  if (p?.images?.length) return apiBase + p.images[0].url
+  return ''
+}
+
 const catName = (id) => categories.value.find(c => c.id === id)?.name || '-'
 
 function openForm(row) {
   show.value = true
   Object.assign(form, { id: null, name: '', category_id: null, price: 0, promo_price: 0, size: '', description: '', images_urls: [] })
+
+  pendingFiles.value = []
+  pendingPreviews.value = []
+
   if (row) {
     Object.assign(form, JSON.parse(JSON.stringify(row)))
     form.images_urls = row.images?.map(i => i.url) || []
@@ -90,6 +127,13 @@ async function addCat() {
   fetchAll()
 }
 
+function onPickPending(e) {
+  const files = Array.from(e.target.files || [])
+  if (!files.length) return
+  pendingFiles.value.push(...files)
+  pendingPreviews.value.push(...files.map(f => URL.createObjectURL(f)))
+}
+
 async function save() {
   const payload = {
     name: form.name, category_id: form.category_id, price: form.price,
@@ -98,7 +142,11 @@ async function save() {
   if (!form.id) {
     const res = await api.post('/products/', payload)
     const id = res.data.id
-    if (form.images_urls?.length) await api.post(`/products/${id}/images`, form.images_urls)
+    if (pendingFiles.value.length) {
+      const r = await fileUpload(`/api/upload/products/${id}`, pendingFiles.value)
+      const urls = r.data.saved || []
+      if (urls.length) await api.post(`/products/${id}/images`, urls)
+    }
   } else {
     await api.put(`/products/${form.id}`, payload)
     if (form.images_urls?.length) await api.post(`/products/${form.id}/images`, form.images_urls)
