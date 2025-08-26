@@ -14,6 +14,12 @@ else
 	PIP_IN_BACKEND := .venv/bin/pip
 endif
 
+# ===== Common settings =====
+BACKEND_HOST := 127.0.0.1
+BACKEND_PORT := 8000
+BACKEND_LOG  := backend.log
+BACKEND_PID  := backend.pid
+
 # ===== Backend =====
 backend-install:
 	@echo "==> Creating Python venv and installing deps"
@@ -22,8 +28,27 @@ backend-install:
 	$(PIP_ROOT) install -r backend/requirements.txt
 
 backend-run:
-	@echo "==> Running FastAPI (http://127.0.0.1:8000)"
-	cd backend && $(PY_IN_BACKEND) -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+	@echo "==> Running FastAPI (http://$(BACKEND_HOST):$(BACKEND_PORT))"
+	cd backend && $(PY_IN_BACKEND) -m uvicorn app.main:app --reload --host $(BACKEND_HOST) --port $(BACKEND_PORT)
+
+backend-start:
+	@echo "==> Starting backend (detached)..."
+	@mkdir -p backend
+	cd backend && nohup $(PY_IN_BACKEND) -m uvicorn app.main:app --reload --host $(BACKEND_HOST) --port $(BACKEND_PORT) \
+		> $(BACKEND_LOG) 2>&1 & echo $$! > $(BACKEND_PID)
+	@echo "   Backend log: backend/$(BACKEND_LOG)"
+	@echo "   Backend pid: backend/$(BACKEND_PID)"
+
+backend-stop:
+	@echo "==> Stopping backend..."
+	@if [ -f backend/$(BACKEND_PID) ]; then \
+		PID=$$(cat backend/$(BACKEND_PID)); \
+		echo "   kill $$PID"; \
+		kill $$PID || true; \
+		rm -f backend/$(BACKEND_PID); \
+	else \
+		echo "   No pid file: backend/$(BACKEND_PID)"; \
+	fi
 
 backend-shell:
 	cd backend && $(PY_IN_BACKEND)
@@ -31,6 +56,10 @@ backend-shell:
 backend-clean-venv:
 	@echo "==> Removing backend venv"
 	@if [ -d "backend/.venv" ]; then rm -rf backend/.venv; fi
+
+backend-log:
+	@echo "==> Tailing backend log (Ctrl+C 離開)"
+	@cd backend && ( touch $(BACKEND_LOG) && tail -f $(BACKEND_LOG) )
 
 # ===== Frontend =====
 frontend-install:
@@ -40,21 +69,13 @@ frontend-run:
 	cd frontend && yarn dev
 
 # ===== Dev (run backend + frontend together) =====
-dev:
+dev: backend-start
 	@echo "==> Starting backend (detached) and frontend..."
-	# 先嘗試啟動後端，失敗也不要讓 make 停（例如已在跑）
-	-@cd backend && ( nohup $(PY_IN_BACKEND) -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000 > ../$(BACKEND_LOG) 2>&1 & disown )
-	@echo "   Backend log: backend/$(BACKEND_LOG)"
-	# 前端在前景執行；若中斷就結束（看得到錯誤）
 	cd frontend && npm run dev
 
-.PHONY: backend-install backend-run backend-shell backend-clean-venv frontend-install frontend-run dev
+.PHONY: backend-install backend-run backend-start backend-stop backend-shell backend-clean-venv backend-log frontend-install frontend-run dev
 
-
-backend-log:
-	@echo "==> Tailing backend log (Ctrl+C 離開)"
-	@cd backend && tail -f $(BACKEND_LOG)
-
+# Windows 專用：強殺 8000 連線的 python（用不到可刪）
 kill-backend:
 	@echo "==> Kill backend on 8000 (Windows)"
 	-@tasklist | grep -i python.exe > NUL 2>&1 || true
@@ -64,11 +85,8 @@ kill-backend:
 kill-backend-nix:
 	-@fuser -k 8000/tcp || true
 
-# mkdir -p backend/app/static/uploads
 static:
 	mkdir -p backend/app/static/uploads
-
-
 # venv被佔線無法刪除
 # taskkill /F /IM python.exe 2>NUL
 # taskkill /F /IM uvicorn.exe 2>NUL
@@ -76,4 +94,3 @@ static:
 # port佔用查詢
 # netstat -ano | findstr :$port
 # taskkill //F //PID 13636
-
