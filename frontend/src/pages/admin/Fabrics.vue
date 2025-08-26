@@ -53,23 +53,39 @@
 
       <el-divider>圖片</el-divider>
 
-      <template v-if="!form.id">
-        <div class="card" style="margin-bottom:8px">
-          <p class="small">布料圖片（可多選）</p>
-          <input type="file" multiple accept="image/*" @change="onPickPending($event, 'image')"/>
-          <div class="grid cols-3" style="margin-top:8px">
-            <img v-for="(u,i) in pendingImagesPreviews" :key="i" :src="u" class="img"/>
-          </div>
-        </div>
+      
+<template v-if="!form.id">
+  <div class="card" style="margin-bottom:8px">
+    <p class="small">布料圖片（可多選）</p>
+    <el-upload
+      list-type="picture-card"
+      :auto-upload="false"
+      :file-list="pendingImagesList"
+      :on-change="onImageChange"
+      :on-remove="onImageChange"
+      multiple
+      accept="image/*"
+    >
+      <template #default>選擇圖片</template>
+    </el-upload>
+  </div>
 
-        <div class="card">
-          <p class="small">作品圖片（可多選）</p>
-          <input type="file" multiple accept="image/*" @change="onPickPending($event, 'work')"/>
-          <div class="grid cols-3" style="margin-top:8px">
-            <img v-for="(u,i) in pendingWorksPreviews" :key="i" :src="u" class="img"/>
-          </div>
-        </div>
-      </template>
+  <div class="card">
+    <p class="small">作品圖片（可多選）</p>
+    <el-upload
+      list-type="picture-card"
+      :auto-upload="false"
+      :file-list="pendingWorksList"
+      :on-change="onWorkChange"
+      :on-remove="onWorkChange"
+      multiple
+      accept="image/*"
+    >
+      <template #default>選擇圖片</template>
+    </el-upload>
+  </div>
+</template>
+
 
       <template v-else>
         <UploadGallery v-model="form.images_urls" :upload-url="`/api/upload/fabrics/${form.id}?kind=image`" title="布料圖片"/>
@@ -97,6 +113,28 @@ const show = ref(false)
 const form = reactive({})
 
 const pendingImagesFiles = ref([])
+
+const pendingImagesList = ref([]) // UploadUserFile[]
+const pendingWorksList = ref([])  // UploadUserFile[]
+
+function ensureUid(list) {
+  list.forEach((f, i) => {
+    if (!f.uid) f.uid = `${Date.now()}_${i}_${Math.random().toString(36).slice(2,7)}`
+  })
+}
+
+function onImageChange(_file, files) {
+  ensureUid(files)
+  pendingImagesList.value = files
+  pendingImagesFiles.value = files.map(f => f.raw).filter(Boolean)
+}
+
+function onWorkChange(_file, files) {
+  ensureUid(files)
+  pendingWorksList.value = files
+  pendingWorksFiles.value = files.map(f => f.raw).filter(Boolean)
+}
+
 const pendingWorksFiles = ref([])
 const pendingImagesPreviews = ref([])
 const pendingWorksPreviews = ref([])
@@ -182,3 +220,7 @@ async function delRow(row) {
 
 onMounted(fetchAll)
 </script>
+
+<style scoped>
+.el-upload-list__item-actions{opacity:1 !important;}
+</style>
