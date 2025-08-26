@@ -21,7 +21,7 @@
     </el-table-column>
   </el-table>
 
-  <el-drawer v-model="show" size="80%" :title="form.id ? '編輯訂單' : '新增訂單'">
+  <el-dialog v-model="show" width="80%" :title="form.id ? '編輯訂單' : '新增訂單'" destroy-on-close append-to-body top="10vh">
     <el-form :model="form" label-width="120">
       <el-form-item label="顧客名稱"><el-input v-model="form.customer_name"/></el-form-item>
       <el-form-item label="訂單描述"><el-input v-model="form.description"/></el-form-item>
@@ -92,7 +92,7 @@
         <el-button type="primary" @click="save">儲存</el-button>
       </div>
     </template>
-  </el-drawer>
+  </el-dialog>
 </template>
 
 <script setup>

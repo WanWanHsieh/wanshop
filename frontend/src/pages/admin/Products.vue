@@ -36,7 +36,7 @@
     </el-table-column>
   </el-table>
 
-  <el-drawer v-model="show" size="60%" :title="form.id ? '編輯商品' : '新增商品'">
+  <el-dialog v-model="show" width="60%" :title="form.id ? '編輯商品' : '新增商品'" destroy-on-close append-to-body top="10vh">
     <el-form :model="form" label-width="120">
       <el-form-item label="名稱"><el-input v-model="form.name"/></el-form-item>
       <el-form-item label="類別">
@@ -72,7 +72,7 @@
         <el-button type="primary" @click="save">儲存</el-button>
       </div>
     </template>
-  </el-drawer>
+  </el-dialog>
 </template>
 
 <script setup>
