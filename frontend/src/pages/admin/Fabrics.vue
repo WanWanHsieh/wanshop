@@ -181,8 +181,18 @@ const firstImg = (f) => {
   return "";
 };
 
+function resetPending() {
+  pendingImagesList.value = [];
+  pendingWorksList.value = [];
+  pendingImagesFiles.value = [];
+  pendingWorksFiles.value = [];
+  pendingImagesPreviews.value = [];
+  pendingWorksPreviews.value = [];
+}
+
 function openForm(row) {
-  show.value = true;
+  resetPending();
+
   Object.assign(form, {
     id: null,
     name: "",
@@ -196,16 +206,19 @@ function openForm(row) {
     works_urls: [],
   });
 
-  pendingImagesFiles.value = [];
-  pendingWorksFiles.value = [];
-  pendingImagesPreviews.value = [];
-  pendingWorksPreviews.value = [];
-
   if (row) {
-    Object.assign(form, JSON.parse(JSON.stringify(row)));
-    form.images_urls = row.images?.map((i) => i.url) || [];
-    form.works_urls = row.works?.map((i) => i.url) || [];
+    const r = JSON.parse(JSON.stringify(row));
+    Object.assign(form, r);
+    form.images_urls = Array.isArray(r.images)
+      ? r.images.map((i) => i.url).filter(Boolean)
+      : [];
+    form.works_urls = Array.isArray(r.works)
+      ? r.works.map((i) => i.url).filter(Boolean)
+      : [];
   }
+  form.images_urls = [...new Set(form.images_urls)];
+  form.works_urls = [...new Set(form.works_urls)];
+  show.value = true;
 }
 
 async function fetchAll() {
